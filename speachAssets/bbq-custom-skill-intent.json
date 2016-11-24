@@ -1,0 +1,26 @@
+{
+  "intents": [
+    {
+      "intent": "getTemperatureIntent",
+      "slots": [
+        {
+          "name": "Component",
+          "type": "NAME-TRAXLER-LIST_OF_COMPONENTS"
+        }
+      ]
+    },
+    {
+      "intent": "setTemperatureIntent",
+      "slots": [
+        {
+          "name": "Component",
+          "type": "NAME-TRAXLER-LIST_OF_COMPONENTS"
+        },
+        {
+          "name": "Value",
+          "type": "AMAZON.FOUR_DIGIT_NUMBER"
+        }
+      ]
+    }
+  ]
+}

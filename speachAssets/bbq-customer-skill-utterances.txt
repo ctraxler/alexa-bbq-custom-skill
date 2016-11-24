@@ -1,0 +1,3 @@
+getTemperature what is the temperature of the {Component}
+getTemperature what is the {Component} temperature
+setTemperature set the {Component} to {Value}
