@@ -8,203 +8,190 @@
     or in the "license" file accompanying this file. This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 */
 
-/**
- * This simple sample has no external dependencies or session management, and shows the most basic
- * example of how to create a Lambda function for handling Alexa Skill requests.
- *
- * Examples:
- * One-shot model:
- *  User: "Alexa, tell Hello World to say hello"
- *  Alexa: "Hello World!"
- */
+'use strict';
 
-/**
- * App ID for the skill
- */
-var APP_ID = "amzn1.ask.skill.d3683cb6-6e79-4df5-8f21-d5e5d51e2d92"; //replace with "amzn1.echo-sdk-ams.app.[your-unique-value-here]";
+function AlexaSkill(appId) {
+    this._appId = appId;
+}
 
-/**
- * The AlexaSkill prototype and helper functions
- */
-var AlexaSkill = require('./AlexaSkill');
+AlexaSkill.speechOutputType = {
+    PLAIN_TEXT: 'PlainText',
+    SSML: 'SSML'
+}
 
-log("Marker 1", "Before declaration of AWS");
-var AWS = require('aws-sdk');
-
-/**
- * BBQSkill is a child of AlexaSkill.
- * To read more about inheritance in JavaScript, see the link below.
- *
- * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript#Inheritance
- */
-var BBQSkill = function () {
-    AlexaSkill.call(this, APP_ID);
-};
-
-// Extend AlexaSkill
-BBQSkill.prototype = Object.create(AlexaSkill.prototype);
-BBQSkill.prototype.constructor = BBQSkill;
-
-BBQSkill.prototype.eventHandlers.onSessionStarted = function (sessionStartedRequest, session) {
-    console.log("BBQSkill onSessionStarted requestId: " + sessionStartedRequest.requestId
-        + ", sessionId: " + session.sessionId);
-    // any initialization logic goes here
-};
-
-BBQSkill.prototype.eventHandlers.onLaunch = function (launchRequest, session, response) {
-    console.log("BBQSkill onLaunch requestId: " + launchRequest.requestId + ", sessionId: " + session.sessionId);
-    var speechOutput = "Welcome to the BBQ. You can control temperature, alarms, and the fan. Ask for further help on these topics.";
-    var repromptText = "You can control temperature, alarms and the fan.";
-    response.ask(speechOutput, repromptText);
-};
-
-BBQSkill.prototype.eventHandlers.onSessionEnded = function (sessionEndedRequest, session) {
-    console.log("BBQSkill onSessionEnded requestId: " + sessionEndedRequest.requestId
-        + ", sessionId: " + session.sessionId);
-    // any cleanup logic goes here
-};
-
-BBQSkill.prototype.intentHandlers = {
-    // register custom intent handlers
-    "getTemperatureIntent": function (intent, session, response) {
-
-
-
-        log("Marker 2", "Before declaration of iodata");
-        var iotData = new AWS.IotData({endpoint: "a3riiqm5a27d7f.iot.us-east-1.amazonaws.com"});
-        log("Marker 3", "After declaration of AWS");
-
-        log("Inbound getTemperatureIntent Intent", intent);
-        log("Inbound getTemperatureIntent Session", session);
-
-        /* validate that we know what component we are getting the temperature for
-        * should be one of...
-        *   Barbecue or BBQ
-        *   Timer
-        *   Lower Level
-        *   Upper Level
-        *   Lower Alarm Temperature
-        *   Upper Alarm Temperature
-        *   Fan
-        */
-
-        var str = intent.slots.Component.value;
-
-        log('Component', str);
-
-        switch(str.toUpperCase()) {
-            case 'BARBECUE':
-            case 'BBQ':
-
-                //need to figure out how to send a message to the bbq and get the response back
-
-                // some help https://forums.aws.amazon.com/message.jspa?messageID=699922
-                // shows the response pattern... https://developer.amazon.com/public/community/post/Tx3828JHC7O9GZ9/Using-Alexa-Skills-Kit-and-AWS-IoT-to-Voice-Control-Connected-Devices
-
-                // seems like we need to publish the message and if sucessful, listen for the response and put the 
-                // response to alexa in the response callback. we may need a response function here. 
-
-/*                {
-                    "state": {
-                        "desired": {
-                            "attribute1": integer2,
-                            "attribute2": "string2",
-                            ...
-                            "attributeN": boolean2
-                        },
-                        "reported": {
-                            "attribute1": integer1,
-                            "attribute2": "string1",
-                            ...
-                            "attributeN": boolean1
-                        }
-                    }
-                    "clientToken": "token",
-                    "version": version
-                }
-
-*/
-                    //Update Device Shadow
-
-
-                var params = {
-
-                    "thingName" : "First-BBQ-Contoller"
-
-                };
-
-                iotData.getThingShadow(params, function(err, data) {
-                        if (err){
-                       //Handle the error here
-                            console.log(err, err.stack);
-                        }
-                        else {
-                            log("Data back from shadow", data);
-                            
-                            log("payload", data.payload);
-                            var objState = JSON.parse(data.payload);
-                            log("objState", objState);
-                            var responseStr = "The temperature of the " + str +  " is " + objState.state.reported.bbq + " degrees.";
-                            response.tellWithCard(responseStr,"Get a temperature", responseStr); 
-                        }
-                    }
-                );
-
-                break;
-            case 'LOWER LEVEL':
-
-                response.tellWithCard("Getting the lower level temperature!", "Get a temperature", "Getting the lower level temperature!");
-                
-                break;
-            case 'UPPER LEVEL':
-                response.tellWithCard("Getting the lower level temperature!", "Get a temperature", "Getting the lower level temperature!");                
-                break;
-
-            case 'LOWER ALARM':
-                response.tellWithCard("Getting the lower alarm temperature!", "Get a temperature", "Getting the lower alarm temperature!");
-                break;
-
-            case 'UPPER ALARM':
-                response.tellWithCard("Getting the upper alarm temperature!", "Get a temperature", "Getting the upper alarm temperature!");
-                break;
-
-
-            default:
-                response.tellWithCard("I did not understand that! You can get the bbq, lower level, upper level, lower alarm, and upper alarm temperatures!", "Get a temperature", "I did not understand that! You can get the bbq, lower level, upper level, lower alarm, and upper alarm temperatures!");
-                
-        }
-    },
-    "setTemperatureIntent": function (intent, session, response) {
-
-        log("Inbound setTemperatureIntent Intent", intent);
-        log("Inbound setTemperatureIntent Session", session);
-
-
-        response.tellWithCard("Got set temperature!", "Got set temperature", "Got set temperature!");
+AlexaSkill.prototype.requestHandlers = {
+    LaunchRequest: function (event, context, response) {
+        this.eventHandlers.onLaunch.call(this, event.request, event.session, response);
     },
 
+    IntentRequest: function (event, context, response) {
+        this.eventHandlers.onIntent.call(this, event.request, event.session, response);
+    },
 
-    "AMAZON.HelpIntent": function (intent, session, response) {
-//        response.ask("You can control temperature, alarms, and the fan. For more help, ask for help on one of these topics.");
-    
-          response.ask("You can control temperature, alarms and the fan. For more help, ask for help on one of these topics.");  
+    SessionEndedRequest: function (event, context) {
+        this.eventHandlers.onSessionEnded(event.request, event.session);
+        context.succeed();
     }
 };
 
 /**
- * Utility functions.
+ * Override any of the eventHandlers as needed
  */
-function log(title, msg) {
-    console.log('*************** ' + title + ' *************');
-    console.log(msg);
-    console.log('*************** ' + title + ' End*************');
-}
+AlexaSkill.prototype.eventHandlers = {
+    /**
+     * Called when the session starts.
+     * Subclasses could have overriden this function to open any necessary resources.
+     */
+    onSessionStarted: function (sessionStartedRequest, session) {
+    },
 
-// Create the handler that responds to the Alexa Request.
-exports.handler = function (event, context) {
-    // Create an instance of the HelloWorld skill.
-    var bbqSkill = new BBQSkill();
-    bbqSkill.execute(event, context);
+    /**
+     * Called when the user invokes the skill without specifying what they want.
+     * The subclass must override this function and provide feedback to the user.
+     */
+    onLaunch: function (launchRequest, session, response) {
+        throw "onLaunch should be overriden by subclass";
+    },
+
+    /**
+     * Called when the user specifies an intent.
+     */
+    onIntent: function (intentRequest, session, response) {
+        var intent = intentRequest.intent,
+            intentName = intentRequest.intent.name,
+            intentHandler = this.intentHandlers[intentName];
+        if (intentHandler) {
+            console.log('dispatch intent = ' + intentName);
+            intentHandler.call(this, intent, session, response);
+        } else {
+            throw 'Unsupported intent = ' + intentName;
+        }
+    },
+
+    /**
+     * Called when the user ends the session.
+     * Subclasses could have overriden this function to close any open resources.
+     */
+    onSessionEnded: function (sessionEndedRequest, session) {
+    }
 };
 
+/**
+ * Subclasses should override the intentHandlers with the functions to handle specific intents.
+ */
+AlexaSkill.prototype.intentHandlers = {};
 
+AlexaSkill.prototype.execute = function (event, context) {
+    try {
+        console.log("session applicationId: " + event.session.application.applicationId);
+
+        // Validate that this request originated from authorized source.
+        if (this._appId && event.session.application.applicationId !== this._appId) {
+            console.log("The applicationIds don't match : " + event.session.application.applicationId + " and "
+                + this._appId);
+            throw "Invalid applicationId";
+        }
+
+        if (!event.session.attributes) {
+            event.session.attributes = {};
+        }
+
+        if (event.session.new) {
+            this.eventHandlers.onSessionStarted(event.request, event.session);
+        }
+
+        // Route the request to the proper handler which may have been overriden.
+        var requestHandler = this.requestHandlers[event.request.type];
+        requestHandler.call(this, event, context, new Response(context, event.session));
+    } catch (e) {
+        console.log("Unexpected exception " + e);
+        context.fail(e);
+    }
+};
+
+var Response = function (context, session) {
+    this._context = context;
+    this._session = session;
+};
+
+function createSpeechObject(optionsParam) {
+    if (optionsParam && optionsParam.type === 'SSML') {
+        return {
+            type: optionsParam.type,
+            ssml: optionsParam.speech
+        };
+    } else {
+        return {
+            type: optionsParam.type || 'PlainText',
+            text: optionsParam.speech || optionsParam
+        }
+    }
+}
+
+Response.prototype = (function () {
+    var buildSpeechletResponse = function (options) {
+        var alexaResponse = {
+            outputSpeech: createSpeechObject(options.output),
+            shouldEndSession: options.shouldEndSession
+        };
+        if (options.reprompt) {
+            alexaResponse.reprompt = {
+                outputSpeech: createSpeechObject(options.reprompt)
+            };
+        }
+        if (options.cardTitle && options.cardContent) {
+            alexaResponse.card = {
+                type: "Simple",
+                title: options.cardTitle,
+                content: options.cardContent
+            };
+        }
+        var returnResult = {
+                version: '1.0',
+                response: alexaResponse
+        };
+        if (options.session && options.session.attributes) {
+            returnResult.sessionAttributes = options.session.attributes;
+        }
+        return returnResult;
+    };
+
+    return {
+        tell: function (speechOutput) {
+            this._context.succeed(buildSpeechletResponse({
+                session: this._session,
+                output: speechOutput,
+                shouldEndSession: true
+            }));
+        },
+        tellWithCard: function (speechOutput, cardTitle, cardContent) {
+            this._context.succeed(buildSpeechletResponse({
+                session: this._session,
+                output: speechOutput,
+                cardTitle: cardTitle,
+                cardContent: cardContent,
+                shouldEndSession: true
+            }));
+        },
+        ask: function (speechOutput, repromptSpeech) {
+            this._context.succeed(buildSpeechletResponse({
+                session: this._session,
+                output: speechOutput,
+                reprompt: repromptSpeech,
+                shouldEndSession: false
+            }));
+        },
+        askWithCard: function (speechOutput, repromptSpeech, cardTitle, cardContent) {
+            this._context.succeed(buildSpeechletResponse({
+                session: this._session,
+                output: speechOutput,
+                reprompt: repromptSpeech,
+                cardTitle: cardTitle,
+                cardContent: cardContent,
+                shouldEndSession: false
+            }));
+        }
+    };
+})();
+
+module.exports = AlexaSkill;
